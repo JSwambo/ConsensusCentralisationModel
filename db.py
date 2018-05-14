@@ -2,7 +2,7 @@ from tinydb import TinyDB, Query
 import os
 
 class SimData():
-	def __init__(self, db_path, new_sim = False):
+	def __init__(self, db_path, new_sim = True):
 
 		if new_sim:
 			self.clear_sim_data(db_path)
@@ -19,3 +19,4 @@ class SimData():
 
 	def clear_sim_data(self, db_path):
 		os.remove(db_path)
+
