@@ -12,7 +12,7 @@ class Analysis():
 		if not os.path.exists(sim_root_path):
 			os.makedirs(sim_root_path)
 
-		self.SimData = SimData(sim_root_path + '/db.json')
+		self.SimData = SimData(sim_root_path + '/db.json', new_sim = False)
 
 	def read_historic_pool_set_data(self):
 
@@ -52,3 +52,4 @@ class Analysis():
 A = Analysis()
 # A.read_historic_pool_set_data()
 # A.plot_final_pool_size_distribution()
+
