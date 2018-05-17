@@ -7,11 +7,11 @@ import os
 
 class Simulator():
 	def __init__(self):
-		self.NUM_MINERS = 500
-		self.T = 500
+		self.NUM_MINERS = 50
+		self.T = 50
 
 		self.M = self.init_miner_set(self.NUM_MINERS)	# Miner Set
-		self.P = []					# Pool Set
+		self.P = []										# Pool Set
 
 		dir_path = os.path.dirname(os.path.realpath(__file__))
 		sim_root_path = dir_path + '/SimData'
@@ -28,7 +28,8 @@ class Simulator():
 
 	def new_miners_join(self):
 		"""
-		Arrival process is modeled as a poisson process. The long term growth of the network is steady under this model.
+		Arrival process is modeled as a poisson process, with mean arrival set to 3 miners per block/round. 
+		The long term growth of the network is steady under this model.
 		"""
 		num_new_miners = poisson(3)
 		len_miner_set = len(self.M)
@@ -74,12 +75,15 @@ class Simulator():
 	def switch_pool(self, miner):
 		"""
 		If miner is not in a pool, then action defaults to doing nothing.
+		If there are  no pools, then action defaults to doing nothing.
 		Pool switching is based on preferential attachment.
 		"""
-
 		assert isinstance(miner, Miner)
 
 		if not miner.pool:
+			return
+
+		if self.P == []:
 			return
 
 		else:
@@ -156,8 +160,8 @@ class Simulator():
 				self.SimData.insert_data_point(t, pool_IDs)
 
 
-# Sim = Simulator()
-# Sim.test_run()
-# Sim.full_sim()
+if __name__ == '__main__':
 
-
+	Sim = Simulator()
+	# Sim.test_run()
+	Sim.full_sim()
