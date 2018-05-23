@@ -7,7 +7,7 @@ import os
 
 class Simulator():
 	def __init__(self):
-		self.NUM_MINERS = 50
+		self.NUM_MINERS = 5000
 		self.T = 50
 
 		self.M = self.init_miner_set(self.NUM_MINERS)	# Miner Set
@@ -24,7 +24,7 @@ class Simulator():
 		""" 
 		N - number of miners
 		"""
-		return [Miner(ID = i) for i in range(0,N)]
+		return set({Miner(ID = i) for i in range(0,N)})
 
 	def new_miners_join(self):
 		"""
@@ -34,7 +34,7 @@ class Simulator():
 		num_new_miners = poisson(3)
 		len_miner_set = len(self.M)
 		for i in range(len_miner_set, len_miner_set+num_new_miners):
-			self.M.append(Miner(ID = i))
+			self.M.add(Miner(ID = i))
 
 	def create_pool(self, miner):
 		"""
@@ -42,8 +42,8 @@ class Simulator():
 		"""
 		assert isinstance(miner, Miner)
 
-		self.P.append(Pool(miner))
-		miner.pool = self.P[-1]
+		miner.pool = Pool(miner)
+		self.P.append(miner.pool)
 
 
 	def join_pool(self, miner):
@@ -55,22 +55,20 @@ class Simulator():
 		if self.P == []:
 			return
 
-		else: 
+		else:
 			# Unpack all subsets in P and randomly select a miner with which to join.
 			# This weights the choice according to a preferential attachment rule.
-			dist = []
+			dist = set({})
 			for pool in self.P:
-				for member in pool.members:
-					dist.append(member)
+				dist = dist.union(pool.members)
 
-			selected_pool_member = random.choice(dist)
+			selected_pool_member = random.choice([i for i in dist])
 
-			# Add new miner to the selected pool,
-			# update miner pool attribute.
-			for pool in self.P:
-				if selected_pool_member in pool.members:
-					pool.add_member(miner)
-					miner.pool = pool
+			# Update miner's pool attribute
+			miner.pool = selected_pool_member.pool
+
+			# Add miner to pool
+			miner.pool.add_member(miner)
 
 	def switch_pool(self, miner):
 		"""
@@ -89,21 +87,20 @@ class Simulator():
 		else:
 			# Unpack all subsets in P and randomly select a miner with which to join.
 			# This weights the choice according to a preferential attachment rule.
-			dist = []
+			dist = set({})
 			for pool in self.P:
-				for member in pool.members:
-					dist.append(member)
+				dist = dist.union(pool.members)
 
 			selected_pool_member = random.choice(dist)
 
-			# Remove miner from current pool,
-			# add new miner to the selected pool,
-			# update miner pool attribute
-			for new_pool in self.P:
-				if selected_pool_member in new_pool.members:
-					miner.pool.remove_member(miner)
-					new_pool.add_member(miner)
-					miner.pool = new_pool	
+			# Remove miner from current pool
+			miner.pool.remove_member(miner)
+
+			# Update miner's pool attribute
+			miner.pool = selected_pool_member.pool
+
+			# Add miner to pool
+			miner.pool.add_member(miner)
 
 	def assign_actions(self):
 		A = [] 						# Action Set

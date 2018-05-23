@@ -3,8 +3,7 @@ from miner import Miner
 class Pool():
 	def __init__(self, creator):
 		assert isinstance(creator, Miner)
-		self.ID = creator.ID
-		self.members = [creator]
+		self.members = set({creator})
 
 	def get_net_hash_power(self):
 		return sum([miner.hash_power for  miner in self.members])
@@ -17,10 +16,10 @@ class Pool():
 		# sampled from an appropriate distributtion
 		pass
 
-	def add_member(self, Miner):
-		self.members.append(Miner)
+	def add_member(self, miner):
+		self.members.add(miner)
 
-	def remove_member(self, Miner):
-		self.members.remove(Miner)
+	def remove_member(self, miner):
+		self.members.remove(miner)
 
 
