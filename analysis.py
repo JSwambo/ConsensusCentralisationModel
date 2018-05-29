@@ -1,55 +1,53 @@
-from db import SimData
+import pandas as pd
 import os
 import matplotlib.pyplot as plt
 from utils import lengths
 
 
 class Analysis():
-	def __init__(self):
-		
-		dir_path = os.path.dirname(os.path.realpath(__file__))
-		sim_root_path = dir_path + '/SimData'
-		if not os.path.exists(sim_root_path):
-			os.makedirs(sim_root_path)
+    def __init__(self):
 
-		self.SimData = SimData(sim_root_path + '/db.json', new_sim = False)
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        self.sim_root_path = dir_path + '/SimData'
+        if not os.path.exists(self.sim_root_path):
+            os.makedirs(self.sim_root_path)
 
-	def read_historic_pool_set_data(self):
+    def get_size_dist_series(self, T, num_miners):
+        path = self.sim_root_path + \
+            "/size_distribution_series_T-%d_M-%d.txt" % (T, num_miners)
+        if not os.path.exists(path):
+            print "Could not find file at path: %s" % (path)
+        else:
+            df = pd.read_csv(path)
+            return df
 
-		for time in range(0, self.SimData.get_sim_length()):
-			print self.SimData.search_by_time(time)
+    def clean_data(self, T, num_miners):
+        df = self.get_size_dist_series(T, num_miners)
 
-	def plot_final_pool_size_distribution(self):
-		
-		end_time = self.SimData.get_sim_length()
-		raw_pool_data = self.SimData.search_by_time(end_time-1)
-		pool_IDs = raw_pool_data['P']
+        # relabel dataframe:
+        columns = [str(i) for i in range(-1, df.shape[1] - 1)]
+        columns[0] = 'Time'
+        df.columns = columns
 
-		LARGEST_POOL_SIZE = max(lengths(pool_IDs))
+        # starting from the final column, remove all columns without data (whose values are all 0)
+        order = range(0, df.shape[1] - 1)
+        order.reverse()
 
-		n_bins = LARGEST_POOL_SIZE
-		counts = []
+        for i in order:
+                # if there are 0 counts at each time step, remove the unnecessary data column
+            if list(df[str(i)]) == [0.0 for j in range(len(df[str(i)]))]:
+                df.drop(labels=[str(i)], axis=1, inplace=True)
+            else:
+                break
 
-		for pool in pool_IDs:
-			counts.append(len(pool))
+        return df
 
-		dis = [0 for i in range(0,LARGEST_POOL_SIZE+1)]
-
-		for i in range(0, len(counts)):
-			dis[counts[i]] += 1
-
-		# print pool_IDs
-		plt.plot(range(0,len(dis)), dis, 'o-')
-		plt.show()		
-
-	def plot_pool_size_dynamics(self):
-		
-		pass
-
-
-
-
-A = Analysis()
-# A.read_historic_pool_set_data()
-# A.plot_final_pool_size_distribution()
-
+    def plot_size_dist_series(self, T, num_miners):
+        df = self.clean_data(T, num_miners)
+        plt.xlabel("Time, $t$")
+        plt.ylabel("Number of members in pool, $n$")
+        df.drop(labels=['Time'], axis=1, inplace=True)
+        for i in range(0, df.shape[1]):
+            df[str(i)].plot(label="pool size: %i" % (i))
+        plt.legend()
+        plt.show()
