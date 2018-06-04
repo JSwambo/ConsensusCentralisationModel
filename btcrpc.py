@@ -3,6 +3,7 @@ from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 import numpy as np
 import pandas as pd
 import re
+import os
 
 
 class CoinbaseTxData(object):
@@ -62,13 +63,25 @@ class CoinbaseTxData(object):
 
     def save_coinbase_tx_data(self):
 
-        # initialise data structure for coinbase transaction data storage
-        max_block_height = self.rpc_connection.getblockcount()
-        coinbase_data = np.zeros((2, max_block_height))
+        # Check if data has already been saved
+        try:
+            self.load_coinbase_tx_data()
+            coinbase_data = self.df['coinbase_tx_data'].tolist()
+            start = len(coinbase_data)
+        # Could not load data
+        except(IOError):
+            start = 0
+            coinbase_data = []
 
-        for i in range(max_block_height):
-            coinbase_data[0][i] = i
-            coinbase_data[1][i] = self.extract_coinbase_data(i)
+        max_block_height = self.rpc_connection.getblockcount()
+
+        # for i in range(start, max_block_height):
+        for i in range(start, start + 300):
+            try:
+                coinbase_data.append([self.extract_coinbase_data(i)])
+            except(JSONRPCException):
+                print("Could not find coinbase transaction for block %i" % (i))
+                coinbase_data.append([None])
 
         df = pd.DataFrame(coinbase_data)
         df.to_csv(self.data_root_path + "/coinbase_tx_data.txt")
@@ -76,13 +89,30 @@ class CoinbaseTxData(object):
     def load_coinbase_tx_data(self):
 
         self.df = pd.read_csv(self.data_root_path + "/coinbase_tx_data.txt")
+        self.df.columns = ["block_height", "coinbase_tx_data"]
 
-    def scrape_db_for_matches(self, pool_strings):
+    def scrape_db_for_matches(self, pools):
 
-        # match = re.search(pattern, string)
-        # if match:
-                # process(match)
+        pool_strings = set(pools.values())
+        pool_counts = pools
+        for pool_name in pools.keys():
+            pool_counts[pool_name] = 0
 
+        self.load_coinbase_tx_data()
+
+        for string in self.df['coinbase_tx_data']:
+            for target in pool_strings:
+                try:
+                    match = re.search(target, string)
+                    if match:
+                        for pool_name in pools.keys():
+                            if pools[pool_name] == target:
+                                pool_counts[pool_name] += 1
+                # No identifying string for pool
+                except(TypeError):
+                    pass
+
+        return pool_counts
 
         # Identifiable string segments used by each pool:
 POOLS = {"BTC.com": "BTC.COM",
